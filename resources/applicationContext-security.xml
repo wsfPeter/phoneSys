@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<b:beans xmlns="http://www.springframework.org/schema/security"
+	xmlns:b="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans.xsd
+    http://www.springframework.org/schema/security
+        http://www.springframework.org/schema/security/spring-security-3.2.xsd">
+	<!-- 无需进行权限验证的路径 -->
+	<http pattern="/" security="none" />
+	<http pattern="/admin/login" security="none" />
+	<http pattern="/admin/userLogin" security="none" />
+	<http pattern="/adminPhoneNo/userPhoneNo" security="none" />
+	<http pattern="/admin/expired" security="none" />
+	<http pattern="/organization/ajaxOrganization" security="none" />
+	<http pattern="/template/**" security="none" />
+	<http pattern="/html/**" security="none" />
+	<http pattern="/upload/**" security="none" />
+	<http access-denied-page="/html/error_page_access_denied.html"
+		use-expressions="true">
+		<!-- 管理员管理 -->
+		<intercept-url pattern="/admin/main" access="hasRole('ROLE_BASE')" />
+		<intercept-url pattern="/profile/**" access="hasRole('ROLE_BASE')" />
+		<intercept-url pattern="/common/**" access="hasRole('ROLE_BASE')" />
+		<!-- 部门管理 -->
+		<intercept-url pattern="/organization/**" access="hasRole('ROLE_ORGANIZATION')" />
+		<!-- 管理员管理 -->
+		<intercept-url pattern="/admin/**" access="hasRole('ROLE_ADMIN')" />
+		<!-- 角色管理 -->
+		<intercept-url pattern="/role/**" access="hasRole('ROLE_ROLE')" />
+		<!-- 日志管理 -->
+		<intercept-url pattern="/log/**" access="hasRole('ROLE_LOG')" />
+		<!-- License管理 -->
+		<intercept-url pattern="/license/**" access="hasRole('ROLE_LICENSE')" />
+		<!-- 管理题库 -->
+		<intercept-url pattern="/questionBank/**" access="hasRole('ROLE_QUESTION_BANG')" />
+		<!-- 管理试题 -->
+		<intercept-url pattern="/questionTest/**" access="hasRole('ROLE_QUESTION_TEST')" />
+		<!-- 管理试卷 -->
+		<intercept-url pattern="/papers/**" access="hasRole('ROLE_PAPERS')" />
+		<!-- 基础管理权限 -->
+		<intercept-url pattern="/**" access="hasRole('ROLE_BASE')" />
+		<form-login login-page="/admin/login" default-target-url="/admin/main"
+			authentication-failure-url="/admin/login" always-use-default-target="true" />
+		<logout invalidate-session="true" logout-success-url="/admin/login"
+			logout-url="/admin/logout" />
+
+		<session-management invalid-session-url="/admin/login">
+			<concurrency-control max-sessions="1"
+				error-if-maximum-exceeded="false" expired-url="/admin/expired" />
+		</session-management>
+
+	</http>
+	<!-- 后台管理权限认证 -->
+	<authentication-manager>
+		<authentication-provider user-service-ref="adminDetailsServiceImpl">
+			<password-encoder hash="md5" />
+		</authentication-provider>
+	</authentication-manager>
+</b:beans>

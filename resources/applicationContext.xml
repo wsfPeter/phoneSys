@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:p="http://www.springframework.org/schema/p" xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:tx="http://www.springframework.org/schema/tx" xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xmlns:cache="http://www.springframework.org/schema/cache"
+	xsi:schemaLocation="
+	http://www.springframework.org/schema/beans 
+	http://www.springframework.org/schema/beans/spring-beans.xsd 
+	http://www.springframework.org/schema/context 
+	http://www.springframework.org/schema/context/spring-context.xsd 
+	http://www.springframework.org/schema/aop 
+	http://www.springframework.org/schema/aop/spring-aop.xsd 
+	http://www.springframework.org/schema/tx 
+	http://www.springframework.org/schema/tx/spring-tx.xsd
+	http://www.springframework.org/schema/mvc  
+    http://www.springframework.org/schema/mvc/spring-mvc.xsd
+    http://www.springframework.org/schema/cache http://www.springframework.org/schema/cache/spring-cache-3.2.xsd">
+
+	<!-- JDBC参数配置 -->
+	<bean
+		class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer"
+		lazy-init="true">
+		<property name="systemPropertiesModeName" value="SYSTEM_PROPERTIES_MODE_OVERRIDE" />
+		<property name="ignoreResourceNotFound" value="true" />
+		<property name="locations">
+			<list>
+				<value>classpath:/jdbc.properties</value>
+				<value>classpath:/log4j.properties</value>
+			</list>
+		</property>
+	</bean>
+
+<!-- 数据源配置 -->
+	<bean id="dataSource" class="org.logicalcobwebs.proxool.ProxoolDataSource">
+		<property name="driver">
+			<value>com.mysql.jdbc.Driver</value>
+		</property>
+		<property name="driverUrl" value="jdbc:mysql://localhost:3306/mobilesys?user=root&amp;password=root&amp;useUnicode=true&amp;characterEncoding=UTF-8" />
+		<property name="user" value="root" />
+		<property name="password" value="root" />
+		<property name="alias" value="Pool_phonemanager" />
+		<property name="prototypeCount" value="5" />
+		<property name="houseKeepingSleepTime" value="90000" />
+		<property name="maximumConnectionCount" value="20" />
+		<property name="minimumConnectionCount" value="5" />
+		<property name="simultaneousBuildThrottle" value="20" />
+		<property name="maximumConnectionLifetime" value="14400000" />
+		<property name="maximumActiveTime" value="300000" />
+		<property name="houseKeepingTestSql" value="select CURRENT_DATE" />
+	</bean>
+
+	<bean id="sessionFactory"
+		class="org.springframework.orm.hibernate3.annotation.AnnotationSessionFactoryBean">
+		<!-- 配置Hibernate拦截器,自动填充数据的插入、更新时间 -->
+		<property name="dataSource" ref="dataSource" />
+		<property name="hibernateProperties">
+			<value>
+				<!-- 设置数据库方言 -->
+				hibernate.dialect=${hibernate.dialect}
+				<!-- 设置自动创建|更新|验证数据库表结构 -->
+				hibernate.hbm2ddl.auto=update
+				<!-- 输出SQL语句到控制台 -->
+				hibernate.show_sql=${hibernate.show_sql}
+				<!-- 格式化输出到控制台的SQL语句 -->
+				hibernate.format_sql=${hibernate.format_sql}
+				<!-- 数据库批量查询数 -->
+				hibernate.jdbc.fetch_size=50
+				<!-- 数据库批量更新数 -->
+				hibernate.jdbc.batch_size=30
+				<!-- 开启二级缓存 hibernate.cache.use_second_level_cache=true -->
+				<!-- 开启查询缓存 hibernate.cache.use_query_cache=true -->
+				<!-- 配置缓存提供者 hibernate.cache.provider_class=org.hibernate.cache.EhCacheProvider -->
+				<!-- 二级缓存配置文件路径 hibernate.cache.provider_configuration_file_resource_path=classpath:ehcache.xml -->
+			</value>
+		</property>
+		<property name="packagesToScan" value="com.cienet" />
+	</bean>
+	
+	
+	<!-- 配置freemarkerManager -->
+	<bean id="freeMarkerConfigurer"
+		class="org.springframework.web.servlet.view.freemarker.FreeMarkerConfigurer">
+		<property name="templateLoaderPath" value="/WEB-INF/template" />
+		<property name="defaultEncoding" value="utf-8" />
+		<property name="freemarkerSettings">
+			<props>
+				<prop key="template_update_delay">10</prop>
+				<prop key="locale">zh_CN</prop>
+				<prop key="datetime_format">yyyy-MM-dd HH:mm:ss</prop>
+				<prop key="date_format">yyyy-MM-dd HH:mm:ss</prop>
+				<prop key="number_format">#.##</prop>
+			</props>
+		</property>
+	</bean>
+
+	<!-- 视图解释类 -->
+	<!-- 使用freemarker做为视图 -->
+	<bean id="viewResolver"
+		class="org.springframework.web.servlet.view.freemarker.FreeMarkerViewResolver">
+		<property name="suffix" value=".ftl" />
+		<property name="viewClass"
+			value="org.springframework.web.servlet.view.freemarker.FreeMarkerView" />
+		<property name="contentType" value="text/html;charset=utf-8" />
+		<property name="exposeRequestAttributes" value="true" />
+		<property name="exposeSessionAttributes" value="true" />
+		<property name="exposeSpringMacroHelpers" value="true" />
+	</bean>
+
+	<!-- 设置需要进行Spring注解扫描的类包 -->
+	<context:component-scan base-package="com.cienet.**"></context:component-scan>
+
+	<!-- 使用AspectJ方式配置AOP -->
+	<aop:aspectj-autoproxy proxy-target-class="true" />
+	<aop:config proxy-target-class="true" />
+
+	<!-- 使用注解方式定义事务 -->
+	<tx:annotation-driven proxy-target-class="true"
+		transaction-manager="transactionManager" />
+
+	<!-- 配置事务管理器 -->
+	<bean id="transactionManager"
+		class="org.springframework.orm.hibernate3.HibernateTransactionManager">
+		<property name="sessionFactory" ref="sessionFactory" />
+	</bean>
+
+	<!-- 配置事务传播特性 -->
+	<tx:advice id="transactionAdvice" transaction-manager="transactionManager">
+		<tx:attributes>
+			<tx:method name="save*" propagation="REQUIRED" />
+			<tx:method name="delete*" propagation="REQUIRED" />
+			<tx:method name="update*" propagation="REQUIRED" />
+			<tx:method name="register" propagation="REQUIRED" />
+			<tx:method name="recoverPassword" propagation="REQUIRED" />
+			<tx:method name="modify" propagation="REQUIRED" />
+			<tx:method name="get*" read-only="true" propagation="NOT_SUPPORTED" />
+			<tx:method name="load*" read-only="true" propagation="NOT_SUPPORTED" />
+			<tx:method name="find*" read-only="true" propagation="NOT_SUPPORTED" />
+			<tx:method name="*" read-only="true" propagation="NOT_SUPPORTED" />
+		</tx:attributes>
+	</tx:advice>
+
+	<cache:annotation-driven cache-manager="cacheManager" />
+
+	<bean id="ehCacheManager"
+		class="org.springframework.cache.ehcache.EhCacheManagerFactoryBean">
+		<property name="configLocation" value="classpath:/ehcache.xml" />
+		<property name="shared" value="true" />
+	</bean>
+
+	<bean id="cacheManager" class="org.springframework.cache.ehcache.EhCacheCacheManager">
+		<property name="cacheManager" ref="ehCacheManager" />
+	</bean>
+
+	<!-- 配置哪些类的哪些方法参与事务 -->
+	<aop:config>
+		<aop:advisor pointcut="execution(* com.cienet..*service..*.*(..))"
+			advice-ref="transactionAdvice" />
+	</aop:config>
+
+	<bean id="jacksonObjectMapper" class="org.codehaus.jackson.map.ObjectMapper"
+		lazy-init="false" />
+
+	<!-- 默认的注解映射的支持 -->
+	<mvc:annotation-driven />
+
+
+	<!-- 使用jsp做为视图 -->
+	<!-- <bean -->
+	<!-- class="org.springframework.web.servlet.view.InternalResourceViewResolver"> -->
+	<!-- <property name="prefix" value="/WEB-INF/" /> -->
+	<!-- <property name="suffix" value=".jsp" />可为空,方便实现自已的依据扩展名来选择视图解释类的逻辑 -->
+	<!-- <property name="viewClass" -->
+	<!-- value="org.springframework.web.servlet.view.JstlView" /> -->
+	<!-- </bean> -->
+
+	<!-- 拦截器 -->
+	<mvc:interceptors>
+		<bean class="com.cienet.common.LogInterceptor" />
+	</mvc:interceptors>
+
+	<!-- 对静态资源文件的访问 方案一 （二选一） -->
+	<!-- <mvc:default-servlet-handler /> -->
+
+	<!-- 对静态资源文件的访问 方案二 （二选一） -->
+	<mvc:resources mapping="template/images/**" location="template/images/"
+		cache-period="31556926" />
+	<mvc:resources mapping="template/js/**" location="template/js/"
+		cache-period="31556926" />
+	<mvc:resources mapping="template/css/**" location="template/css/"
+		cache-period="31556926" />
+	<mvc:resources mapping="html/**" location="html/"
+		cache-period="31556926" />
+	<mvc:resources mapping="upload/**" location="upload/"
+		cache-period="31556926" />
+
+</beans>
